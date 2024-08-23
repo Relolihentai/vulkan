@@ -304,17 +304,24 @@ namespace vulkan {
 		void AddInstanceExtension(const char* extensionName) {
 			AddLayerOrExtension(instanceExtensions, extensionName);
 		}
+		//通过vkGetInstanceProcAddr获取vkEnumerateInstanceVersion函数的指针
+		//若nullptr则说明当前vulkan版本为1.0，至少应为1.1
 		VkResult UseLatestApiVersion() {
 			if (vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"))
 				return vkEnumerateInstanceVersion(&apiVersion);
 			return VK_SUCCESS;
 		}
 		VkResult CreateInstance(VkInstanceCreateFlags flags = 0) {
+			//Debug Message层Extension
+			//仅在编译选项为Debug时，给InstanceLyaer，InstanceExtension添加对应Extension
 #ifndef NDEBUG
 			AddInstanceLayer("VK_LAYER_KHRONOS_validation");
 			AddInstanceExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
+			//创建Vulkan实例需要填写vkInstanceCreateInfo
 			VkApplicationInfo applicatianInfo = {
+				//apiVersion比较重要
+				//其他成员是自定义名称和版本号
 				.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 				.apiVersion = apiVersion
 			};
@@ -327,6 +334,7 @@ namespace vulkan {
 				.enabledExtensionCount = uint32_t(instanceExtensions.size()),
 				.ppEnabledExtensionNames = instanceExtensions.data()
 			};
+			//赋值给result，然后判断result是否为nullptr
 			if (VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &instance)) {
 				std::cout << std::format("[ graphicsBase ] ERROR\nFailed to create a vulkan instance!\nError code: {}\n", int32_t(result));
 				return result;
@@ -341,13 +349,19 @@ namespace vulkan {
 #endif
 			return VK_SUCCESS;
 		}
+		//检查层
 		VkResult CheckInstanceLayers(std::span<const char*> layersToCheck) const {
 			uint32_t layerCount;
 			std::vector<VkLayerProperties> availableLayers;
+			//若第二个参数pProperties为nullptr，则将可用层的数量返回到layerCount中
+			//否则则由第一个参数pPropertyCount指定所需获取的VkLayerProperties数量
+			//并将第二个参数的VkProperties返回到pProperties
 			if (VkResult result = vkEnumerateInstanceLayerProperties(&layerCount, nullptr)) {
 				std::cout << std::format("[ graphicsBase ] ERROR\nFailed to get the count of instance layers!\n");
 				return result;
 			}
+			//若layerCount不为0，则对比layersToCheck和availableLayers
+			//将layersToCheck中不可用的层设为nullptr
 			if (layerCount) {
 				availableLayers.resize(layerCount);
 				if (VkResult result = vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data())) {
@@ -370,6 +384,7 @@ namespace vulkan {
 					i = nullptr;
 			return VK_SUCCESS;
 		}
+		//检查拓展
 		VkResult CheckInstanceExtensions(std::span<const char*> extensionsToCheck, const char* layerName) const {
 			uint32_t extensionCount;
 			std::vector<VkExtensionProperties> availableExtensions;

@@ -27,6 +27,8 @@ bool InitializeWindow(VkExtent2D size, bool fullScreen = false, bool isResizable
 		return false;
 	}
 
+	//获取GLFW所需要的Vulkan Extension
+	//但是Windows就只有这俩，所以可以直接Add
 #ifdef _WIN32
 	graphicsBase::Base().AddInstanceExtension(VK_KHR_SURFACE_EXTENSION_NAME);
 	graphicsBase::Base().AddInstanceExtension(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
@@ -42,6 +44,7 @@ bool InitializeWindow(VkExtent2D size, bool fullScreen = false, bool isResizable
 	for (size_t i = 0; i < extensionCount; i++)
 		graphicsBase::Base().AddInstanceExtension(extensionNames[i]);
 #endif
+	//这里是设备Extension
 	graphicsBase::Base().AddDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 	graphicsBase::Base().UseLatestApiVersion();
